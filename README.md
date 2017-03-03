@@ -19,7 +19,7 @@ Image's supported volumes:
 
 To restrict access to only authorized users, you can define two environment variables: `USERNAME` and `PASSWORD`
 ```console
-$ docker run --name webdav -p 80:80 -v /media:/media -e USERNAME=webdav PASSWORD=webdav -d sashgorokhov/webdav
+$ docker run --name webdav -p 80:80 -v /media:/media -e USERNAME=webdav -e PASSWORD=webdav -d sashgorokhov/webdav
 ```
 
 # Supported Docker versions
