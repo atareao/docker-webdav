@@ -14,7 +14,7 @@ cd docker-nginx-webdav
 
 ## Construir la imagen
 ```
-docker build -t webdav:Dockerfile .
+docker build -t ugeek/webdav .
 ```
 
 ## Ver el número de imagen:
