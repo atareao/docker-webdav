@@ -1,36 +1,26 @@
-# Servidor webdav partiendo de debian-testing
+# Servidor webdav partiendo de alpine
 
 ##  Clonar el repositorio
 
 ```
-git clone https://github.com/uGeek/docker-nginx-webdav.git
+git clone https://github.com/atareao/docker-webdav.git
 ```
 
 y accedemos al interior de la carpeta:
 
 ```
-cd docker-nginx-webdav
+cd docker-webdav
 ```
 
-## Construir la imagen
-```
-docker build -t ugeek/webdav:arm .
-```
+## Crea el directorio
 
-## Ver el número de imagen:
-```
-docker images
-```
-
-## Montar el contenedor
-
-USERNAME: webdav
-PASSWORD: webdav
-PUERTO: 80
-
---restart=unless-stopped: Iniciar cada vez que iniciemos el servidor
-
+Tienes que crear el directorio y añadir todos los archivos y subdirectorios que quieras compartir,
 
 ```
-docker run --name webdav --restart=unless-stopped -p 80:80 -v $HOME/docker/webdav:/media -e USERNAME=webdav -e PASSWORD=webdav -d  <IMAGE>
+mkdir share
 ```
+
+USERNAME: user
+PASSWORD: passwd
+
+Ya puedes acceder a través de `http://localhost:8080`
