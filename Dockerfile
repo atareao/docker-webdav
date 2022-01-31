@@ -1,24 +1,31 @@
-FROM ubuntu:18.04
+FROM nginx:stable-alpine
 
 ARG UID=${UID:-1000}
 ARG GID=${GID:-1000}
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-                    nginx \
-                    nginx-extras \
-                    apache2-utils && \
-                    rm -rf /var/lib/apt/lists
+RUN apk add --update \
+            --no-cache \
+            tini \
+            shadow \
+            apache2-utils && \
+    rm -rf /var/cache/apk && \
+    groupmod -g $GID www-data && \
+    adduser -u $UID -S www-data -G www-data && \
+    mkdir /share && \
+    chown -R www-data:www-data /share && \
+    chown -R www-data:www-data /var/cache/nginx && \
+    chown -R www-data:www-data /var/log/nginx && \
+    chown -R www-data:www-data /etc/nginx && \
+    touch /var/run/nginx.pid && \
+    chown -R www-data:www-data /var/run/nginx.pid
 
-RUN usermod -u $UID www-data && groupmod -g $GID www-data
-
-VOLUME /media
 EXPOSE 80
+VOLUME /share
+
+USER www-data
 
 COPY webdav.conf /etc/nginx/conf.d/default.conf
-RUN rm /etc/nginx/sites-enabled/*
-
 COPY entrypoint.sh /
-RUN chmod +x entrypoint.sh
 
-CMD /entrypoint.sh && nginx -g "daemon off;"
+ENTRYPOINT ["tini", "--"]
+CMD ["/bin/sh", "/entrypoint.sh"]
