@@ -21,27 +21,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# Exit if any command fails
-set -o errexit
-set -o pipefail
-set -o nounset
-
-LOCAL_USER_ID=${LOCAL_USER_ID:-1000}
-LOCAL_GROUP_ID=${LOCAL_GROUP_ID:-1000}
-
-if ! grep -q -E "^dockerus:" /etc/group;
+USERNAME="$1"
+PASSWORD="$2"
+if [[ -z "$USERNAME" || -z "$PASSWORD" ]]
 then
-    addgroup -g "$LOCAL_GROUP_ID" -S dockerus
+    echo "Name and password are mandatory"
+    exit 1
 fi
-
-if ! grep -q -E "^dockerus:" /etc/passwd;
+if [[ -f htpasswd ]]
 then
-    adduser -u "$LOCAL_USER_ID" -S dockerus -G dockerus
+    touch htpasswd
 fi
-# comment next line if needs root
-chown -R dockerus:dockerus /opt
-chown -R dockerus:dockerus /share
-chmod o+w /dev/stdout
-# comment next line if needs root
-set -- su-exec dockerus "$@"
-exec "$@"
+docker run -it atareao/webdav \
+           htpasswd -bn "$USERNAME" "$PASSWORD" >> .htpasswd
+sed -i '$ d' .htpasswd
