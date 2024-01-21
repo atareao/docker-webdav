@@ -40,16 +40,23 @@ RUN apk add --update \
     mkdir /share
 
 COPY --from=builder /opt /opt
-COPY --from=builder /tmp/nginx-master /tmp/nginx
-COPY --from=builder /tmp /tmp/caca
-COPY --from=builder /tmp/nginx-master/objs/*_module.so /opt/nginx/modules/
 COPY nginx.conf /opt/nginx/conf/nginx.conf
-COPY entrypoint.sh /
 COPY ./404.html ./50x.html /opt/html
 
+# Create the user
+ENV USERNAME=dockerus \
+    UID=1000
+
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/${USERNAME}" \
+    --shell "/sbin/nologin" \
+    --uid "${UID}" \
+    "$USERNAME" && \
+    chown -R "${USERNAME}:${USERNAME}" /opt /share
+
 EXPOSE 8080
+USER "$USERNAME"
 
-
-ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
 CMD ["/opt/nginx/sbin/nginx", "-g", "daemon off;"]
-
