@@ -1,6 +1,7 @@
 FROM alpine:3.19 AS builder
 RUN apk add --update \
             --no-cache \
+            git~=2.43 \
             pcre~=8.45 \
             libxml2~=2.11 \
             libxslt~=1.1 \
@@ -12,10 +13,14 @@ RUN apk add --update \
             libxml2-dev~=2.11 \
             libxslt-dev~=1.1 && \
     cd /tmp && \
+    git clone https://github.com/arut/nginx-dav-ext-module.git && \
+    git clone https://github.com/aperezdc/ngx-fancyindex.git && \
+    git clone https://github.com/openresty/headers-more-nginx-module.git && \
     wget -q https://github.com/nginx/nginx/archive/master.zip -O nginx.zip && \
     unzip nginx.zip && \
     cd nginx-master && \
-    ./auto/configure --prefix=/opt/nginx --with-http_dav_module && \
+    ./auto/configure --prefix=/opt/nginx --with-http_dav_module --add-module=/tmp/nginx-dav-ext-module --add-module=/tmp/ngx-fancyindex --add-module=/tmp/headers-more-nginx-module && \
+    make modules && \
     make && \
     make install && \
     apk del gcc make libc-dev pcre-dev zlib-dev libxml2-dev libxslt-dev && \
@@ -35,9 +40,12 @@ RUN apk add --update \
     mkdir /share
 
 COPY --from=builder /opt /opt
-
+COPY --from=builder /tmp/nginx-master /tmp/nginx
+COPY --from=builder /tmp /tmp/caca
+COPY --from=builder /tmp/nginx-master/objs/*_module.so /opt/nginx/modules/
 COPY nginx.conf /opt/nginx/conf/nginx.conf
 COPY entrypoint.sh /
+COPY ./404.html ./50x.html /opt/html
 
 EXPOSE 8080
 
