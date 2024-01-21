@@ -24,3 +24,7 @@ USERNAME: user
 PASSWORD: passwd
 
 Ya puedes acceder a través de `http://localhost:8080`
+
+## docker compose
+
+También tienes a tu disposición un docker-compose que puedes utilizar para levantar tu servicio.
