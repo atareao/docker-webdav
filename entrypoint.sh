@@ -43,5 +43,6 @@ chown -R dockerus:dockerus /opt
 chown -R dockerus:dockerus /share
 chmod o+w /dev/stdout
 # comment next line if needs root
+echo "Start webdav"
 set -- su-exec dockerus "$@"
 exec "$@"
