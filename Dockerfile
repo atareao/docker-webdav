@@ -41,7 +41,7 @@ RUN apk add --update \
 
 COPY --from=builder /opt /opt
 COPY nginx.conf /opt/nginx/conf/nginx.conf
-COPY ./404.html ./50x.html /opt/html
+COPY ./html /opt/nginx/html/
 
 # Create the user
 ENV USERNAME=dockerus \
