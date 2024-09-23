@@ -1,0 +1,23 @@
+version: '3.7'
+services:
+  webdav:
+    image: atareao/webdav:v3.0
+    container_name: webdav
+    init: true
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    volumes:
+      - share:/share
+      - ./.htpasswd:/opt/nginx/conf/.htpasswd
+    labels:
+      - "es.atareao.board.active=true"
+      - "es.atareao.board.category=tools"
+      - "es.atareao.board.name=webdav"
+      - "es.atareao.board.description=description"
+      - "es.atareao.board.url=http://localhost:8080"
+      - "es.atareao.board.icon=fa-solid fa-box"
+      - "es.atareao.board.new_tab=false"
+
+volumes:
+  share: {}
