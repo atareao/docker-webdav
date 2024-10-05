@@ -1,0 +1,13 @@
+services:
+  webdav:
+    image: atareao/webdav:v3.0
+    container_name: webdav
+    restart: unless-stopped
+    init: true
+    networks:
+      - proxy
+    volumes:
+      - ./share:/share
+      - ./.htpasswd:/opt/nginx/conf/.htpasswd
+    ports:
+      - 8080:8080
