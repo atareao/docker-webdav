@@ -1,65 +1,57 @@
-FROM alpine:3.20 AS builder
-RUN apk add --update \
-            --no-cache \
-            git~=2.45 \
-            pcre~=8.45 \
-            libxml2~=2.12 \
-            libxslt~=1.1 \
-            gcc~=13.2 \
-            make~=4.4 \
-            musl-dev~=1.2 \
-            pcre-dev~=8.45 \
-            zlib-dev~=1.3 \
-            libxml2-dev~=2.12 \
-            libxslt-dev~=1.1 && \
-    cd /tmp && \
-    git clone https://github.com/arut/nginx-dav-ext-module.git && \
-    git clone https://github.com/aperezdc/ngx-fancyindex.git && \
-    git clone https://github.com/openresty/headers-more-nginx-module.git && \
-    wget -q https://github.com/nginx/nginx/archive/master.zip -O nginx.zip && \
-    unzip nginx.zip && \
-    cd nginx-master && \
-    ./auto/configure --prefix=/opt/nginx \
-                     --with-http_dav_module \
-                     --add-module=/tmp/nginx-dav-ext-module \
-                     --add-module=/tmp/ngx-fancyindex \
-                     --add-module=/tmp/headers-more-nginx-module && \
-    make modules && \
-    make && \
-    make install && \
-    apk del gcc make libc-dev pcre-dev zlib-dev libxml2-dev libxslt-dev && \
-    rm -rf /var/cache/apk
+# 1. Base ligera de Alpine 3.23
+FROM alpine:3.23
 
-FROM alpine:3.20
+# 2. Argumentos para el usuario (mapeo con UID 1000)
+ARG USER=webdav
+ARG UID=1000
+ARG GID=1000
 
-RUN apk add --update \
-            --no-cache \
-            pcre~=8.45 \
-            libxml2~=2.12 \
-            libxslt~=1.1 \
-            apache2-utils~=2.4 \
-            tzdata~=2024 && \
-    rm -rf /var/cache/apk && \
-    mkdir /share
+# 3. Instalación de paquetes
+# Incluye nginx, el módulo WebDAV extendido y utilidades para contraseñas
+RUN apk add --no-cache \
+    nginx \
+    nginx-mod-http-dav-ext \
+    apache2-utils 
 
-COPY --from=builder /opt /opt
-COPY nginx.conf /opt/nginx/conf/nginx.conf
-COPY ./html /opt/nginx/html/
+# 4. Crear usuario sin privilegios
+RUN adduser -D -u ${UID} ${USER} 
 
-# Create the user
-ENV USERNAME=dockerus \
-    UID=1000
+# 5. Preparar estructura de directorios y permisos
+# Se crean todas las rutas necesarias para logs, pids y temporales
+RUN mkdir -p /data \
+             /var/log/nginx \
+             /var/lib/nginx/tmp \
+             /run/nginx \
+             /tmp/nginx_upload \
+             /etc/nginx \
+             /usr/local/bin \
+             /usr/share/nginx/html && \
+    # Ajuste de propiedad al usuario 1000 (webdav)
+    chown -R ${UID}:${GID} /data \
+                           /var/log/nginx \
+                           /var/lib/nginx \
+                           /run/nginx \
+                           /tmp/nginx_upload \
+                           /usr/share/nginx/html && \
+    # Redirección de logs a stdout/stderr para recolectar con Podman
+    ln -sf /dev/stdout /var/log/nginx/access.log && \
+    ln -sf /dev/stderr /var/log/nginx/error.log
 
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/${USERNAME}" \
-    --shell "/sbin/nologin" \
-    --uid "${UID}" \
-    "$USERNAME" && \
-    chown -R "${USERNAME}:${USERNAME}" /opt /share
+# 6. Copiar archivos de configuración y scripts
+# Asegúrate de tener estos archivos en el mismo directorio que el Dockerfile
+COPY nginx.conf /etc/nginx/nginx.conf 
+COPY auth.sh /usr/local/bin/auth 
+COPY html/ /usr/share/nginx/html/ 
 
+# 7. Ajustes finales de permisos y archivos de autenticación
+RUN chmod +x /usr/local/bin/auth  && \
+    touch /etc/nginx/.htpasswd  && \
+    chown ${UID}:${GID} /etc/nginx/.htpasswd /usr/local/bin/auth && \
+    chown -R ${UID}:${GID} /usr/share/nginx/html 
+
+# 8. Metadatos y configuración de ejecución
+USER ${USER}
 EXPOSE 8080
-USER "$USERNAME"
 
-CMD ["/opt/nginx/sbin/nginx", "-g", "daemon off;"]
+# Comando de arranque (Nginx en primer plano)
+CMD ["nginx", "-g", "daemon off;"]
