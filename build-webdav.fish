@@ -8,6 +8,14 @@ echo "--- Construyendo imagen NO-ROOT de $name ---"
 
 set container (buildah from $image_base)
 
+# FUNCIÓN DE LIMPIEZA: Se ejecuta si el script falla o termina
+function cleanup --on-event fish_exit
+    if set -q mountpoint
+        echo "--- Desmontando contenedor de forma segura ---"
+        buildah unmount $container 2>/dev/null
+    end
+end
+
 # 1. Instalar paquetes
 buildah run $container -- apk add --no-cache \
         nginx \
@@ -59,4 +67,6 @@ buildah config --port 8080 $container
 buildah config --cmd '["nginx", "-g", "daemon off;"]' $container
 
 buildah unmount $container
+set -e mountpoint # Eliminamos la variable para evitar que el cleanup actúe dos veces
+
 buildah commit --rm --squash $container atareao/$name:latest
